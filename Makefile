@@ -18,6 +18,8 @@ build:	all
 	(cd src-485; make build; cd ..)
 	(cd src-tls; make build; cd ..)
 	(cd src-ui; make build; cd ..)
+	cp doc/config-samples/open-osdp-params-CP.json \
+	  opt/open-osdp/run/CP/open-osdp-params.json
 	(cd test; make build-test; cd ..)
 
 release:	build
