@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+echo
 cp-tests/1-status
 cp-tests/2-poll
 sleep 3
