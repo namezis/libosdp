@@ -236,7 +236,7 @@ void
     conformance_status (oconf->rep_raw.test_status));
 
   fprintf (ctx->log, "4.17 PD Busy Reply                      %s\n",
-    conformance_status (oconf->rep_busy.test_status));
+    conformance_status (oconf->resp_busy.test_status));
 #if 0
   //OSDP_CONFORM rep_input_stat;          // 4.6
   OSDP_CONFORM rep_reader_tamper;       // 4.8
@@ -424,6 +424,16 @@ status = -1;
     {
     // breech-loaded cases.  by convention these occur at the top of the old menu structure for transitional purposes.
 
+    case OSDP_CMDB_BUSY:
+      context->next_response = OSDP_BUSY;
+
+      osdp_conformance.resp_busy.test_status =
+        OCONFORM_EXERCISED;
+      if (context->verbosity > 2)
+        fprintf (stderr, "Declaring BUSY on next response\n");
+      status = ST_OK;
+      break;
+
     case OSDP_CMDB_CAPAS:
       {
         unsigned char
@@ -440,6 +450,7 @@ status = -1;
       };
       status = ST_OK;
       break;
+
     case OSDP_CMDB_DUMP_STATUS:
 #if 1
 //0

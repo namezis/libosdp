@@ -1,0 +1,8 @@
+#!/bin/bash
+set -x
+OPT_OSDP=/opt/open-osdp
+${OPT_OSDP}/bin/write-osdp-PD-command $1
+${OPT_OSDP}/bin/HUP-PD
+sleep 2
+
+

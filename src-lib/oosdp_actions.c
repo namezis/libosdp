@@ -253,10 +253,28 @@ int
     can cause some turn-the-crank artifacts.  may need multiple polls for
     expected behaviors to happen.
 
-    if there was a power report return that.
   */
+  if (!done)
+    if (ctx->next_response EQUALS OSDP_BUSY)
+    {
+      done = 1;
+      current_length = 0;
+      status = send_message (ctx,
+        OSDP_BUSY, p_card.addr, &current_length,
+        0, NULL);
+      osdp_conformance.resp_busy.test_status =
+        OCONFORM_EXERCISED;
+      if (ctx->verbosity > 2)
+      {
+        sprintf (tlogmsg, "Responding with OSDP_BUSY (Tamper)");
+        fprintf (ctx->log, "%s\n", tlogmsg);
+      };
+    };
+  if (!done)
   if (ctx->tamper EQUALS 1)
   {
+    // if there was a power report return that.
+
     done = 1;
     ctx->tamper = 1;
     osdp_lstat_response_data [ 0] = ctx->tamper;
@@ -272,6 +290,7 @@ int
       fprintf (ctx->log, "%s\n", tlogmsg);
     };
   };
+  if (!done)
   if (ctx->power_report EQUALS 1)
   {
     done = 1;
@@ -383,7 +402,7 @@ int
     };
   };
   if (!done)
-      {
+  {
         /*
           if all else isn't interesting return a plain ack
         */
@@ -398,7 +417,7 @@ int
           sprintf (tlogmsg, "Responding with OSDP_ACK");
           fprintf (ctx->log, "%s\n", tlogmsg);
         };
-      };
+  };
 
   // update status json
   if (status EQUALS ST_OK)

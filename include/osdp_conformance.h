@@ -97,7 +97,7 @@ typedef struct osdp_interop_assessment
   OSDP_CONFORM rep_comm;                // 4.12
   OSDP_CONFORM rep_scan_send;           // 4.13
   OSDP_CONFORM rep_scan_match;          // 4.14
-  OSDP_CONFORM rep_busy;                // 4.17
+  OSDP_CONFORM resp_busy;               // 4.17
 } OSDP_INTEROP_ASSESSMENT;
 
 #define PARAM_MMT (3) // minimum message thresshold

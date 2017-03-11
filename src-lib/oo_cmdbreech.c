@@ -100,6 +100,21 @@ int
         status = ST_CMD_INVALID;
     };
   };
+
+  // busy
+
+  if (status EQUALS ST_OK)
+  {
+    strcpy (this_command, json_string_value (value));
+    test_command = "busy";
+    if (0 EQUALS strncmp (this_command, test_command, strlen (test_command)))
+    {
+      cmd->command = OSDP_CMDB_BUSY;
+      if (ctx->verbosity > 3)
+        fprintf (stderr, "command was %s\n",
+          this_command);
+    };
+  }; 
   if (status EQUALS ST_OK)
   {
     if (0 EQUALS strcmp (current_command, "text"))
@@ -179,7 +194,6 @@ json_t *value;
           this_command);
     };
   }; 
-
 
   // LED output
 

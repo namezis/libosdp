@@ -836,6 +836,8 @@ int
 
   unsigned char
     buf [2];
+  unsigned char
+    message_sequence;
   int
     status;
   unsigned char
@@ -852,12 +854,16 @@ int
     if (command EQUALS OSDP_NAK)
       fprintf (stderr, "NAK being sent...%02x\n", *data);
   };
+  if (command != OSDP_BUSY)
+    message_sequence = next_sequence (context);
+  else
+    message_sequence = 0; //always sequence 0 for osdp_BUSY
   status = osdp_build_message
     (test_blk, // message itself
     current_length, // returned message length in bytes
     command,
     true_dest,
-    next_sequence (context),
+    message_sequence, //next_sequence (context),
     data_length, // data length to use
     data,
     0); // no security

@@ -1,0 +1,7 @@
+#!/bin/bash
+set -x
+OPT_OSDP=/opt/open-osdp
+${OPT_OSDP}/bin/write-osdp-CP-command $1
+${OPT_OSDP}/bin/HUP-CP
+sleep 2
+

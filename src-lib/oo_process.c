@@ -61,7 +61,10 @@ int
   msg.ptr = osdp_buf->buf;
   status = parse_message (&context, &msg, &parsed_msg);
   if (status EQUALS ST_MSG_TOO_SHORT)
+  {
+fprintf (stderr, "too short, say SERIAL_IN\n");
     status = ST_SERIAL_IN;
+  };
   if (status EQUALS ST_OK)
   {
     status = process_osdp_message (&context, &msg);
@@ -84,8 +87,12 @@ int
     memcpy (osdp_buf->buf, temp_buffer.buf, temp_buffer.next);
     osdp_buf->next = temp_buffer.next;
     if (status != ST_OK)
+    {
       // if we experienced an error we just reset things and continue
       status = ST_SERIAL_IN;
+fprintf (stderr, "status was %d declaring SERIAL_IN\n",
+  status);
+    };
   };
   return (status);
 
