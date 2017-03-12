@@ -1,0 +1,8 @@
+#!/bin/bash
+set -x
+./3-power 
+sleep 2
+ ./4-present_card 
+sleep 2
+ ./5-busy 
+
