@@ -257,6 +257,8 @@ int
   if (!done)
     if (ctx->next_response EQUALS OSDP_BUSY)
     {
+      ctx->next_response = 0;
+
       done = 1;
       current_length = 0;
       status = send_message (ctx,

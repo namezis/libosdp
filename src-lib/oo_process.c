@@ -62,7 +62,6 @@ int
   status = parse_message (&context, &msg, &parsed_msg);
   if (status EQUALS ST_MSG_TOO_SHORT)
   {
-fprintf (stderr, "too short, say SERIAL_IN\n");
     status = ST_SERIAL_IN;
   };
   if (status EQUALS ST_OK)
