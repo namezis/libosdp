@@ -1,7 +1,7 @@
 /*
   oosdp-util - open osdp utility routines
 
-  (C)2014-2016 Smithee Spelvin Agnew & Plinge, Inc.
+  (C)2014-2017 Smithee Spelvin Agnew & Plinge, Inc.
 
   Support provided by the Security Industry Association
   http://www.securityindustry.org
@@ -163,7 +163,7 @@ if (secure != 0)
     int i;
     unsigned char *sptr;
     sptr = cmd_ptr + 1;
-    if (context.verbosity > 5)
+    if (context.verbosity > 9)
       fprintf (stderr, "orig next_data %lx\n", (unsigned long)next_data);
     for (i=0; i<data_length; i++)
     {
@@ -918,24 +918,55 @@ fprintf (stderr, "2 pdcap\n");
 
     case OSDP_COMSET:
       {
+        int
+          new_address;
+        int
+          new_speed;
         unsigned char
           osdp_com_response_data [5];
+        unsigned char
+          *p;
+        int
+          refuse_change;
 
-        memset (osdp_com_response_data, 0, sizeof (osdp_com_response_data));
-        i = *(1+msg->data_payload) + (*(2+msg->data_payload) << 8) +
+        refuse_change = 0;
+        p = msg->data_payload;
+        new_address = *(msg->data_payload);
+        new_speed = *(1+msg->data_payload) + (*(2+msg->data_payload) << 8) +
           (*(3+msg->data_payload) << 16) + (*(4+msg->data_payload) << 24);
+        new_speed = *(p+1);
+        new_speed = new_speed + (*(p+2) << 8);
+        new_speed = new_speed + (*(p+3) << 16);
+        new_speed = new_speed + (*(p+4) << 24);
+        // sanity check the input.
+        if (new_address EQUALS 0x7F)
+          refuse_change = 1;
+        if (new_speed != 9600)
+          if (new_speed != 115200)
+            if (new_speed != 38400)
+              if (new_speed != 19200)
+                refuse_change = 1;
 
-        sprintf (logmsg, "COMSET Data Payload %02x %02x%02x%02x%02x %d. 0x%x",
-        *(0+msg->data_payload), *(1+msg->data_payload), *(2+msg->data_payload), *(3+msg->data_payload),
-        *(4+msg->data_payload), i, i);
+        sprintf (logmsg, "COMSET requests new addr %02x new speed %d.",
+          new_address, new_speed);
         fprintf (context->log, "%s\n", logmsg);
 
-        p_card.addr = *(msg->data_payload); // first byte is new PD addr
-        fprintf (context->log, "PD Address set to %02x\n", p_card.addr);
+        // respond on the old address, speed, THEN change.
 
-        osdp_com_response_data [0] = p_card.addr;
-        *(unsigned short int *)(osdp_com_response_data+1) = 9600; // hard-code to 9600 BPS
-        status = ST_OK;
+        memset (osdp_com_response_data, 0, sizeof (osdp_com_response_data));
+        osdp_com_response_data [0] = new_address;
+        if (refuse_change)
+        {
+          osdp_com_response_data [0] = p_card.addr;
+          new_speed = 9600;
+        };
+        osdp_com_response_data [1] = new_speed & 0xff;
+        osdp_com_response_data [2] = (new_speed & 0xff00) >> 8;;
+        osdp_com_response_data [3] = (new_speed & 0xff0000) >> 16;;
+        osdp_com_response_data [4] = (new_speed & 0xff000000) >> 24;;
+
+        // sending response back on old addr/speed
+
         current_length = 0;
         status = send_message (context,
           OSDP_COM, p_card.addr, &current_length,
@@ -945,6 +976,18 @@ fprintf (stderr, "2 pdcap\n");
           sprintf (logmsg, "Responding with OSDP_COM");
           fprintf (context->log, "%s\n", logmsg); logmsg[0]=0;
         };
+
+        // NOW we change it
+        if (!refuse_change)
+          p_card.addr = new_address;
+        fprintf (context->log, "PD Address set to %02x\n", p_card.addr);
+        if (!refuse_change)
+        {
+          sprintf (context->serial_speed, "%d", new_speed);
+          status = init_serial (context, p_card.filename);
+        };
+        fprintf (context->log, "PD Speed set to %s\n", context->serial_speed);
+        status = ST_OK;
       };
       break;
 
@@ -1106,92 +1149,6 @@ printf ("fixme: client cryptogram\n");
       status = action_osdp_POLL (context, msg);
       break;
 
-#if 0
-    case 9999: /* OSDP_POLL: */
-    status = ST_OK;
-    if (context->power_report EQUALS 1)
-    {
-      unsigned char
-        osdp_lstat_response_data [2];
-
-      // power change not yet reported
-      context->power_report = 0;
-      osdp_lstat_response_data [ 0] = context->tamper;
-      osdp_lstat_response_data [ 1] = 1; // report power failure
-      current_length = 0;
-      status = send_message (context,
-        OSDP_LSTATR, p_card.addr, &current_length,
-        sizeof (osdp_lstat_response_data), osdp_lstat_response_data);
-      osdp_conformance.rep_local_stat.test_status =
-        OCONFORM_EXERCISED;
-      if (context->verbosity > 2)
-      {
-        sprintf (logmsg, "Responding with OSDP_LSTAT (Power)");
-        fprintf (context->log, "%s\n", logmsg);
-      };
-    }
-    else
-    {
-      if (context->card_data_valid > 0)
-      {
-        unsigned char
-          osdp_raw_data [4+1024];
-
-        int raw_lth;
-
-      // send data if it's there (value is number of bits)
-      osdp_raw_data [ 0] = 0; // one reader, reader 0
-      osdp_raw_data [ 1] = 0; 
-      osdp_raw_data [ 2] = p_card.bits;
-      osdp_raw_data [ 3] = 0;
-      raw_lth = 4;
-      memcpy (osdp_raw_data+4, p_card.value, p_card.value_len);
-{
-  char tlogmsg [1024];
-  sprintf (tlogmsg, "bits %d. length %d. first 3 bytes %02x:%02x:%02x",
-    p_card.bits, p_card.value_len, p_card.value[0],
-    p_card.value[1], p_card.value[2]);
-fprintf (stderr, "%s\n", tlogmsg);
-  status = oosdp_log (context, OSDP_LOG_STRING, 1, tlogmsg);
-};
-      raw_lth = raw_lth + p_card.value_len;
-      current_length = 0;
-      status = send_message (context,
-        OSDP_RAW, p_card.addr, &current_length, raw_lth, osdp_raw_data);
-      if (context->verbosity > 2)
-      {
-int i;
-char c;
-        sprintf (logmsg, "Responding with cardholder data (%d bits)",
-          p_card.bits);
-        for (i=0; i<p_card.value_len; i++)
-        {
-          c = ':';
-          if (((1+i) % 4) EQUALS 0)
-            c = ' ';
-          if (i EQUALS 0)
-           c = ' ';
-          sprintf (tlogmsg2, "%c%02x", c, p_card.value[i]);
-          strcat (tlogmsg, tlogmsg2);
-        };
-        strcat (logmsg, tlogmsg);
-        fprintf (context->log, "%s\n", logmsg);
-        logmsg[0]=0;tlogmsg[0]=0;tlogmsg2[0]=0;
-      };
-        context->card_data_valid = 0;
-      }
-      else
-      {
-        current_length = 0;
-        status = send_message
-          (context, OSDP_ACK, p_card.addr, &current_length, 0, NULL);
-        context->pd_acks ++;
-        if (context->verbosity > 4)
-          fprintf (stderr, "Responding with OSDP_ACK\n");
-      };
-    };
-    break;
-# endif
 // OLD OSDP_POLL
 
     case OSDP_LSTAT:
