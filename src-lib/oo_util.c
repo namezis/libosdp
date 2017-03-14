@@ -950,6 +950,7 @@ fprintf (stderr, "2 pdcap\n");
         sprintf (logmsg, "COMSET requests new addr %02x new speed %d.",
           new_address, new_speed);
         fprintf (context->log, "%s\n", logmsg);
+fprintf (stderr, "%s\n", logmsg); fflush (context->log);
 
         // respond on the old address, speed, THEN change.
 
@@ -984,6 +985,7 @@ fprintf (stderr, "2 pdcap\n");
         if (!refuse_change)
         {
           sprintf (context->serial_speed, "%d", new_speed);
+fprintf (stderr, "init_serial: %s\n", context->serial_speed);
           status = init_serial (context, p_card.filename);
         };
         fprintf (context->log, "PD Speed set to %s\n", context->serial_speed);
