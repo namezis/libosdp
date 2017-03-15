@@ -2,6 +2,9 @@
 set -x
 ./3-power 
 sleep 2
+/opt/open-osdp/bin/write-osdp-PD-command tamper
+/opt/open-osdp/bin/HUP-PD
+sleep 2
  ./4-present_card 
 sleep 2
  ./5-busy 

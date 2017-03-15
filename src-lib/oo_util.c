@@ -958,37 +958,48 @@ fprintf (stderr, "%s\n", logmsg); fflush (context->log);
         osdp_com_response_data [0] = new_address;
         if (refuse_change)
         {
-          osdp_com_response_data [0] = p_card.addr;
-          new_speed = 9600;
-        };
-        osdp_com_response_data [1] = new_speed & 0xff;
-        osdp_com_response_data [2] = (new_speed & 0xff00) >> 8;;
-        osdp_com_response_data [3] = (new_speed & 0xff0000) >> 16;;
-        osdp_com_response_data [4] = (new_speed & 0xff000000) >> 24;;
+          unsigned char
+            osdp_nak_response_data [2];
 
-        // sending response back on old addr/speed
-
-        current_length = 0;
-        status = send_message (context,
-          OSDP_COM, p_card.addr, &current_length,
-          sizeof (osdp_com_response_data), osdp_com_response_data);
-        if (context->verbosity > 2)
+          current_length = 0;
+          osdp_nak_response_data [0] = OO_NAK_CMD_REC;
+          osdp_nak_response_data [1] = 0xff;
+          status = send_message (context,
+            OSDP_NAK, p_card.addr, &current_length,
+            sizeof (osdp_nak_response_data), osdp_nak_response_data);
+          context->sent_naks ++;
+        }
+        else
         {
-          sprintf (logmsg, "Responding with OSDP_COM");
-          fprintf (context->log, "%s\n", logmsg); logmsg[0]=0;
-        };
+          osdp_com_response_data [1] = new_speed & 0xff;
+          osdp_com_response_data [2] = (new_speed & 0xff00) >> 8;;
+          osdp_com_response_data [3] = (new_speed & 0xff0000) >> 16;;
+          osdp_com_response_data [4] = (new_speed & 0xff000000) >> 24;;
 
-        // NOW we change it
-        if (!refuse_change)
-          p_card.addr = new_address;
-        fprintf (context->log, "PD Address set to %02x\n", p_card.addr);
-        if (!refuse_change)
-        {
-          sprintf (context->serial_speed, "%d", new_speed);
-fprintf (stderr, "init_serial: %s\n", context->serial_speed);
-          status = init_serial (context, p_card.filename);
+          // sending response back on old addr/speed
+
+          current_length = 0;
+          status = send_message (context,
+            OSDP_COM, p_card.addr, &current_length,
+            sizeof (osdp_com_response_data), osdp_com_response_data);
+          if (context->verbosity > 2)
+          {
+            sprintf (logmsg, "Responding with OSDP_COM");
+            fprintf (context->log, "%s\n", logmsg); logmsg[0]=0;
+          };
+
+          // NOW we change it
+          if (!refuse_change)
+            p_card.addr = new_address;
+          fprintf (context->log, "PD Address set to %02x\n", p_card.addr);
+          if (!refuse_change)
+          {
+            sprintf (context->serial_speed, "%d", new_speed);
+            fprintf (stderr, "init_serial: %s\n", context->serial_speed);
+            status = init_serial (context, p_card.filename);
+          };
+          fprintf (context->log, "PD Speed set to %s\n", context->serial_speed);
         };
-        fprintf (context->log, "PD Speed set to %s\n", context->serial_speed);
         status = ST_OK;
       };
       break;

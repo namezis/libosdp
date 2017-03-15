@@ -277,15 +277,15 @@ int
   {
     // if there was a power report return that.
 
-    done = 1;
-    ctx->tamper = 1;
     osdp_lstat_response_data [ 0] = ctx->tamper;
+    done = 1;
     current_length = 0;
     status = send_message (ctx,
       OSDP_LSTATR, p_card.addr, &current_length,
       sizeof (osdp_lstat_response_data), osdp_lstat_response_data);
     osdp_conformance.rep_reader_tamper.test_status =
       OCONFORM_EXERCISED;
+    ctx->tamper = 0;
     if (ctx->verbosity > 2)
     {
       sprintf (tlogmsg, "Responding with OSDP_LSTATR (Tamper)");
