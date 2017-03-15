@@ -1,4 +1,20 @@
 Changes in 1.1 Build 4
 
+changes for comformance testing.  this build (mostly)
+passes the conformance tests from libosdp-conformance 0.1 Build 1
+
+added comset
+
+fixed com report to return 4 bytes not 1
+
 fix version in html pages
+
+Known Issues:
+
+fails istat tests
+
+probably doesn't validate received sequence numbers properly
+
+see issues list in github repo
+
 
