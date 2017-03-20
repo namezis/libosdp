@@ -89,6 +89,7 @@
 
 // NAK error codes
 #define OO_NAK_UNK_CMD (1)
+#define OO_NAK_CMD_REC (0x09)
 
 #define OSDP_MENU_TOP     (0x0000)
 #define OSDP_MENU_CP_DIAG (0x0100)
@@ -348,7 +349,7 @@ typedef struct osdp_context
 
 #define OSDP_VERSION_MAJOR (1)
 #define OSDP_VERSION_MINOR (1)
-#define OSDP_VERSION_BUILD (4)
+#define OSDP_VERSION_BUILD (5)
 
 typedef struct osdp_parameters
 {
