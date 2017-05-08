@@ -312,6 +312,7 @@ int
       current_length = 0;
       status = send_message (context,
         OSDP_POLL, p_card.addr, &current_length, 0, NULL);
+      context->cp_polls++;
       if (context->verbosity > 2)
         fprintf (stderr, "Polling\n");
       break;

@@ -21,11 +21,13 @@
 CC=clang
 LDFLAGS=-g -L /tester/current/lib
 
-CGIPROGS = open-osdp-CP-status open-osdp-PD-status send-osdp-command \
+CGIPROGS = \
+  open-osdp-CP-status open-osdp-PD-status send-osdp-command \
   start-CP-tcp-client start-CP-485 start-PD-tcp-server start-PD-485 \
   start-CP-net-client start-PD-net-server start-MON-485 \
   tail-CP-log tail-MON-log tail-PD-log \
   shutdown-osdp vm-status
+CGISCRIPTS=osdp-config
 
 PROGS = open-osdp-kick
 PAGES = open-osdp-control.html open-osdp-CP.html open-osdp-PD.html \
@@ -38,7 +40,7 @@ SCRIPTS = do-CP-command do-PD-command \
   exec-CPnetclient exec-PDnetserver \
   3-identify run-address-scan write-params
 
-all:	${CGIPROGS} ${PAGES} ${SCRIPTS} ${PROGS}
+all:	${CGIPROGS} ${PAGES} ${SCRIPTS} ${PROGS} ${CGISCRIPTS}
 
 clean:
 	rm -f core *.o ${CGIPROGS} ${PROGS}
@@ -50,8 +52,10 @@ build:	all
 	mkdir -p ../opt/open-osdp/www
 	mkdir -p ../opt/open-osdp/run/CP
 	mkdir -p ../opt/open-osdp/run/PD
+	mkdir -p ../opt/open-osdp/run/MON
 	cp ${PAGES} ../opt/open-osdp/www
 	cp ${CGIPROGS} ../opt/open-osdp/cgi-bin
+	cp ${CGISCRIPTS} ../opt/open-osdp/cgi-bin
 	cp ${SCRIPTS} ../opt/open-osdp/bin
 	cp ${PROGS} ../opt/open-osdp/bin
 

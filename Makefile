@@ -20,6 +20,10 @@ build:	all
 	(cd src-ui; make build; cd ..)
 	cp doc/config-samples/open-osdp-params-CP.json \
 	  opt/open-osdp/run/CP/open-osdp-params.json
+	cp doc/config-samples/open-osdp-params-PD.json \
+	  opt/open-osdp/run/PD/open-osdp-params.json
+	cp doc/config-samples/open-osdp-params-MON.json \
+	  opt/open-osdp/run/MON/open-osdp-params.json
 	(cd test; make build-test; cd ..)
 
 release:	build
