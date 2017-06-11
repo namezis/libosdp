@@ -56,29 +56,31 @@ int
     *mfg;
   int
     mfg_command;
-  int
-    new_message_size;
   unsigned long int
     oui;
   int
     status;
+static char p [1024];
 
 
-  status = oosdp_make_message (OOSDP_MSG_MFG, tlogmsg, msg);
-  if (status EQUALS ST_OK)
-    status = oosdp_log (ctx, OSDP_LOG_NOTIMESTAMP, 1, tlogmsg);
+  status = ST_OK;
   mfg_command = MFG_UNKNOWN;
-  mfg = (OSDP_MFG_HDR *)(msg->data_payload);
+  {
+    memcpy (p, (char *)(msg->data_payload), sizeof (OSDP_MFG_HDR));
+    mfg = (OSDP_MFG_HDR *)&p;
+  };
   if (ctx->verbosity > 3)
   {
     sprintf (tlogmsg, "osdp_MFG: OUI %02x-%02x-%02x Cmd %02x\n",
-      mfg->VendorCode [0], mfg->VendorCode [1], mfg->VendorCode [2],
-      mfg->Command_ID);  
+    mfg->VendorCode [0], mfg->VendorCode [1], mfg->VendorCode [2],
+    mfg->Command_ID);  
     fprintf (ctx->log, "%s\n", tlogmsg);
   };
   details = &(mfg->mfg_details_start);
   oui = (mfg->VendorCode [0]);
+fprintf (stderr, "oui %lx\n", oui);
   oui = (oui * 256) + (mfg->VendorCode [1]);
+fprintf (stderr, "oui %lx\n", oui);
   oui = (oui * 256) + (mfg->VendorCode [2]);
 fprintf (stderr, "oui %lx\n", oui);
 fflush (stdout);
@@ -86,7 +88,7 @@ fflush (stdout);
   // Smithee private OUI for testing
   if (oui == 0x0a0017)
     if (mfg->Command_ID == 1)
-      mfg_command = MFG_SMITHEE_FWUPDATE;
+      mfg_command = MFG_SMITHEE_1;
 
   switch (mfg_command)
   {
@@ -95,98 +97,32 @@ fflush (stdout);
     status = ST_MFG_UNKNOWN;
     break;
 
-  case MFG_SMITHEE_FWUPDATE:
+  case MFG_SMITHEE_1:
 fprintf (stderr, "MFG smithee 1\n");
 
-    status = file_transfer_validate_header (ctx, details);
-    if (status EQUALS ST_XFER_IDLE)
-      status = file_transfer_init_receive (ctx, details, &new_message_size);
+#if 0
+if acceptable file
+if header consistent
+save buffer
+update pointers
+send response
+if done
+  update pointers and close file
 
-    if (status EQUALS ST_OK)
-    {
-      // grab the first bit of the file transfer
-
-      status = file_transfer_update_buffer (ctx, (unsigned char *)mfg);
-    };
-
-    if (status EQUALS ST_OK)
-    {
-      // now that we have a snippet, decide if it's cool
-      status = file_transfer_accepted (ctx);
-      if (status EQUALS ST_XFER_REFUSE)
-        status = file_transfer_response (ctx, 0, OSDP_FILEXFER_STATUS_ABORT);
-    };
-
-    if (status EQUALS ST_OK)
-    {
-      // assuming we liked this message respond
-      status = file_transfer_response (ctx, new_message_size, OSDP_FILEXFER_STATUS_GOOD);
-    };
-
+  unsigned char
+    *filebuf;
+  unsigned long int
+    total_filexfer_length;
+  unsigned long int
+    next_filexfer_out;
+#endif
+    status = ST_OK;
     break;
   };
 
   return (status);
 
 } /* action_osdp_MFG */
-
-
-int
-  action_osdp_MFGREP
-    (OSDP_CONTEXT
-      *ctx,
-    OSDP_MSG
-      *msg)
-
-{ /* action_osdp_MFGREP */
-
-  unsigned char
-    *details;
-  OSDP_MFG_HDR
-    *mfg;
-  int
-    mfg_command;
-  unsigned long int
-    oui;
-  int
-    status;
-
-
-  status = oosdp_make_message (OOSDP_MSG_MFGREP, tlogmsg, msg);
-  if (status EQUALS ST_OK)
-    status = oosdp_log (ctx, OSDP_LOG_NOTIMESTAMP, 1, tlogmsg);
-  mfg_command = MFG_UNKNOWN;
-  mfg = (OSDP_MFG_HDR *)(msg->data_payload);
-  details = &(mfg->mfg_details_start);
-  oui = (mfg->VendorCode [0]);
-  oui = (oui * 256) + (mfg->VendorCode [1]);
-  oui = (oui * 256) + (mfg->VendorCode [2]);
-  // Smithee private OUI for testing
-  if (oui == 0x0a0017)
-    if (mfg->Command_ID == 2)
-      mfg_command = MFG_SMITHEE_FWUPDATE_STATUS;
-  switch (mfg_command)
-  {
-  default:
-    fprintf (stderr, "MFG not implemented\n"); 
-    status = ST_MFG_UNKNOWN;
-    break;
-  case MFG_SMITHEE_FWUPDATE_STATUS:
-fprintf (stderr, "MFGREP smithee status\n");
-    status = file_transfer_continue (ctx, (unsigned char *)mfg);
-    if (status EQUALS ST_XFER_COMPLETE)
-    {
-      // if we're done, close up the file and go back to "idle"
-      ctx->filebuf = 0;
-      ctx->total_filexfer_length = 0;
-      ctx->next_filexfer_offset = 0; // should remain at 0 for PD
-    };
-    break;
-  };
-
-  return (status);
-
-} /* action_osdp_MFGREP */
 
 
 int

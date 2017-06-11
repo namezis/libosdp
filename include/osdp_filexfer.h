@@ -1,0 +1,3 @@
+#define VERIDT_FW_UPDATE_SUCCESS (0x85)
+
+

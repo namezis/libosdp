@@ -1,7 +1,7 @@
 /*
   osdp-tls.h - defitions for osdp-tls
 
-  (C)Copyright 2015 Smithee,Spelvin,Agnew & Plinge, Inc.
+  (C)Copyright 2015-2017 Smithee,Spelvin,Agnew & Plinge, Inc.
 
   Support provided by the Security Industry Association
   http://www.securityindustry.org
@@ -33,6 +33,8 @@ typedef struct osdp_tls_config
     key_file [1024];
   char
     ca_file [1024];
+  char
+    tls_tuning [1024];
 } OSDP_TLS_CONFIG;
 
 #define MAX_BUF (1024)

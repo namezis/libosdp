@@ -1,7 +1,7 @@
 /*
   oo_cmdbreech - breech-loading command processor
 
-  (C)Copyright 2015-2016 Smithee,Spelvin,Agnew & Plinge, Inc.
+  (C)Copyright 2015-2017 Smithee,Spelvin,Agnew & Plinge, Inc.
 
   Support provided by the Security Industry Association
   http://www.securityindustry.org
@@ -101,7 +101,7 @@ int
     };
   };
 
-  // busy
+  // COMMAND: busy
 
   if (status EQUALS ST_OK)
   {
@@ -115,21 +115,9 @@ int
           this_command);
     };
   }; 
-  if (status EQUALS ST_OK)
-  {
-    if (0 EQUALS strcmp (current_command, "text"))
-    {
-char field [1024];
-json_t *value;
-      strcpy (field, "message");
-      value = json_object_get (root, field);
-      if (json_is_string (value))
-      {
-        strcpy (ctx->text, json_string_value (value));
-        cmd->command = OSDP_CMDB_TEXT;
-      };
-    };
-  };
+
+  // COMMAND: capabilities
+
   if (status EQUALS ST_OK)
   {
     strcpy (this_command, json_string_value (value));
@@ -142,6 +130,9 @@ json_t *value;
           this_command);
     };
   }; 
+
+  // COMMAND: dump_status
+
   if (status EQUALS ST_OK)
   {
     strcpy (this_command, json_string_value (value));
@@ -154,6 +145,9 @@ json_t *value;
           this_command);
     };
   }; 
+
+  // COMMAND: identify
+
   if (status EQUALS ST_OK)
   {
     strcpy (this_command, json_string_value (value));
@@ -167,7 +161,7 @@ json_t *value;
     };
   }; 
 
-  // initiate secure channel
+  // COMMAND: initiate_secure_channel
 
   if (status EQUALS ST_OK)
   {
@@ -182,20 +176,8 @@ json_t *value;
     };
   }; 
 
-  if (status EQUALS ST_OK)
-  {
-    strcpy (this_command, json_string_value (value));
-    test_command = "text";
-    if (0 EQUALS strncmp (this_command, test_command, strlen (test_command)))
-    {
-      cmd->command = OSDP_CMDB_TEXT;
-      if (ctx->verbosity > 4)
-        fprintf (stderr, "command was %s\n",
-          this_command);
-    };
-  }; 
-
-  // LED output
+  // COMMAND: led
+  // "perm_on_color" : "<decimal value>"
 
   if (status EQUALS ST_OK)
   {
@@ -223,7 +205,10 @@ json_t *value;
     };
   }; 
 
-  // output (digital bits out)
+  // COMMAND: output
+  // "output_number" : "<decimal>"
+  // "controL_code" : "<decimal>"
+  // "timer" : "<decimal>"
 
   if (status EQUALS ST_OK)
   {
@@ -272,6 +257,9 @@ json_t *value;
       };
     };
   }; 
+
+  // COMMAND: present_card
+
   if (status EQUALS ST_OK)
   {
     value = json_object_get (root, "command");
@@ -286,6 +274,9 @@ json_t *value;
           this_command);
     };
   }; 
+
+  // COMMAND: reset_power
+
   if (status EQUALS ST_OK)
   {
     strcpy (this_command, json_string_value (value));
@@ -298,6 +289,27 @@ json_t *value;
           this_command);
     };
   }; 
+
+  // COMMAND: send_file
+  // "download_path" : "file-to-send"
+
+  if (status EQUALS ST_OK)
+  {
+    if (0 EQUALS strcmp (current_command, "send_file"))
+    {
+      status = ST_CMD_PARSE_ERROR;
+      value = json_object_get (root, "download_path");
+      if (json_is_string (value))
+      {
+        cmd->command = OSDP_CMDB_SEND_FILE;
+        strcpy ((char *)&(cmd->details[0]), json_string_value (value));
+        status = ST_OK;
+      };
+    };
+  };
+
+  // COMMAND: send_poll
+
   if (status EQUALS ST_OK)
   {
     strcpy (this_command, json_string_value (value));
@@ -310,6 +322,9 @@ json_t *value;
           this_command);
     };
   }; 
+
+  // COMMAND: tamper
+
   if (status EQUALS ST_OK)
   {
     strcpy (this_command, json_string_value (value));
@@ -322,6 +337,26 @@ json_t *value;
           this_command);
     };
   }; 
+
+  // COMMAND: text
+  // "message" : "text-to-display"
+
+  if (status EQUALS ST_OK)
+  {
+    if (0 EQUALS strcmp (current_command, "text"))
+    {
+char field [1024];
+json_t *value;
+      strcpy (field, "message");
+      value = json_object_get (root, field);
+      if (json_is_string (value))
+      {
+        strcpy (ctx->text, json_string_value (value));
+        cmd->command = OSDP_CMDB_TEXT;
+      };
+    };
+  };
+
   if (cmdf != NULL)
     fclose (cmdf);
   return (status);

@@ -166,8 +166,6 @@ int
     creds_f;
   char
     logmsg [1024];
-  extern char
-    *multipart_message_buffer_1;
   char
     optstring [1024];
   extern OSDP_BUFFER
@@ -183,7 +181,6 @@ int
   status = ST_OK;
   memset (&osdp_conformance, 0, sizeof (osdp_conformance));
   osdp_conformance.last_unknown_command = OSDP_POLL;
-  context->mmsgbuf = multipart_message_buffer_1;
   memset (&p_card, 0, sizeof (p_card));
 
   context->verbosity = 3;
@@ -197,6 +194,8 @@ int
   context->vendor_code [0] = 0x0A;
   context->vendor_code [1] = 0x00;
   context->vendor_code [2] = 0x17;
+  context->max_pd_receive_payload = 128;
+  context->max_pd_filexfer_payload = 128;
   strcpy (context->fqdn, "perim-0000.example.com");
   m_idle_timeout = 29;
   m_check = OSDP_CRC;

@@ -27,5 +27,5 @@ build:	all
 	(cd test; make build-test; cd ..)
 
 release:	build
-	tar czvf release-libosdp.tgz opt/*
+	tar czf release-libosdp.tgz opt/*
 

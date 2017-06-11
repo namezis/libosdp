@@ -739,7 +739,7 @@ int
 int
   send_message
     (OSDP_CONTEXT
-      *context,
+      *ctx,
     int
       command,
     int
@@ -768,13 +768,13 @@ int
   status = ST_OK;
   true_dest = dest_addr;
   *current_length = 0;
-  if (context->verbosity > 3)
+  if (ctx->verbosity > 3)
   {
     if (command EQUALS OSDP_NAK)
       fprintf (stderr, "NAK being sent...%02x\n", *data);
   };
   if (command != OSDP_BUSY)
-    message_sequence = next_sequence (context);
+    message_sequence = next_sequence (ctx);
   else
     message_sequence = 0; //always sequence 0 for osdp_BUSY
   status = osdp_build_message
@@ -788,22 +788,22 @@ int
     0); // no security
   if (status EQUALS ST_OK)
   {
-  if (context->verbosity > 4)
+  if (ctx->verbosity > 4)
     if (1 /* m_dump */ )
     {
       int
         i;
 
-       fprintf (context->log, "Sending lth %d.=", *current_length);
+       fprintf (ctx->log, "Sending lth %d.=", *current_length);
        for (i=0; i<*current_length; i++)
-         fprintf (context->log, " %02x", test_blk [i]);
-       fprintf (context->log, "\n");
+         fprintf (ctx->log, " %02x", test_blk [i]);
+       fprintf (ctx->log, "\n");
     };
     buf [0] = 0xff;
     // send start-of-message marker (0xff)
-    status = send_osdp_data (context, buf, 1);
+    status = send_osdp_data (ctx, buf, 1);
 
-    status = send_osdp_data (context, test_blk, *current_length);
+    status = send_osdp_data (ctx, test_blk, *current_length);
   };
   return (status);
 

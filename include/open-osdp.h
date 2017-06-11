@@ -1,7 +1,7 @@
 /*
   open-osdp.h - definitions for open osdp
 
-  (C)Copyright 2014-2016 Smithee,Spelvin,Agnew & Plinge, Inc.
+  (C)Copyright 2014-2017 Smithee,Spelvin,Agnew & Plinge, Inc.
 
   Support provided by the Security Industry Association
   http://www.securityindustry.org
@@ -112,6 +112,7 @@
 #define OSDP_CMDB_OSTAT        (1012)
 #define OSDP_CMDB_LSTAT        (1013)
 #define OSDP_CMDB_BUSY         (1014)
+#define OSDP_CMDB_SEND_FILE    (1015)
 
 #define OSDP_CMD_NOOP         (0)
 #define OSDP_CMD_CP_DIAG      (1)
@@ -213,10 +214,13 @@ typedef struct osdp_context
 
   OSDP_LED_STATE
     led [OSDP_MAX_LED];
+  int
+    max_pd_receive_payload;
+  int
+    max_pd_filexfer_payload;
 
   int
     verbosity;
-//  int mode;
   int
     next_sequence;
   char
@@ -282,8 +286,21 @@ typedef struct osdp_context
   unsigned char
     s_mac2 [8];
 
+  // for file transfer
+  // convention: filebuf is NULL and file_total_len is 0 unless we are doing
+  // a file transfer.
+
+  unsigned char
+    *filebuf;
+  unsigned long int
+    total_filexfer_length;
+  unsigned long int
+    next_filexfer_offset;
+
   // for multipart messages, in or out
-  char
+  // convention: mmsgbuf is NULL and total_len is 0 unless we are doing
+  // a multi-part message
+  unsigned char
     *mmsgbuf;
   unsigned short int
     total_len;
@@ -347,6 +364,9 @@ typedef struct osdp_context
 #define OSDP_CHECKSUM (0)
 #define OSDP_CRC (1)
 
+#define OSDP_CP_SEND_FILE (1)
+#define OSDP_CP_SEND_MULTIPART (2)
+
 #define OSDP_VERSION_MAJOR (1)
 #define OSDP_VERSION_MINOR (1)
 #define OSDP_VERSION_BUILD (5)
@@ -396,6 +416,8 @@ typedef struct osdp_parameters
 #define OOSDP_MSG_PKT_STATS (3)
 #define OOSDP_MSG_PD_CAPAS  (4)
 #define OOSDP_MSG_OUT_STATUS (5)
+#define OOSDP_MSG_MFG        (6)
+#define OOSDP_MSG_MFGREP     (7)
 
 
 #define OSDP_BUF_MAX (8192)
@@ -414,7 +436,7 @@ typedef struct osdp_command
   int
     command;
   unsigned char
-    details [128];
+    details [1024];
 } OSDP_COMMAND;
 
 typedef struct osdp_param
@@ -502,7 +524,6 @@ typedef struct osdp_text_hdr
 } OSDP_TEXT_HEADER;
 
 
-
 typedef struct osdp_msg
 {
   unsigned int
@@ -541,23 +562,69 @@ typedef struct osdp_multi_getpiv
     data_tag [8];
 } ZZZOSDP_MULTI_GETPIV;
 
-
-typedef struct osdp_multi_hdr
+typedef struct osdp_mfg_hdr
 {
   unsigned char
     VendorCode [3];
   unsigned short int
-    Reply_ID;
+    Command_ID;
+  unsigned char
+    mfg_details_start;
+} __attribute__((packed))  OSDP_MFG_HDR;
+
+#define MFG_UNKNOWN                 (0)
+#define MFG_SMITHEE_FWUPDATE        (1)
+#define MFG_SMITHEE_FWUPDATE_STATUS (0x0002)
+
+
+typedef struct osdp_multi_hdr
+{
   unsigned short int
-    MpdSizeTotal;
+    MpSizeTotal;
   unsigned short int
-    MpdOffset;
+    MpOffset;
   unsigned short int
-    MpdFragmentSize;
+    MpFragmentSize;
+  unsigned char
+    DataFragment_start;
 } OSDP_MULTI_HDR;
+
+typedef struct osdp_filexfer_hdr
+{
+  unsigned char
+    FtType;
+  unsigned long int
+    FtSizeTotal;
+  unsigned long int
+    FtOffset;
+  unsigned short int
+    FtFragmentSize;
+  unsigned char
+    DataFragment;
+} OSDP_FILEXFER_HEADER_1;
+
+typedef struct osdp_filexfer_response_header
+{
+  unsigned char
+    CommandCode;
+  unsigned short int
+    TotalLength;
+  unsigned short int
+    ReplyMessageOffset;
+  unsigned short int
+    ReplyDataLength;
+  unsigned short int
+    Status;
+} OSDP_FILEXFER_RESPONSE_HEADER;
+#define OSDP_FILEXFER_DEFAULT_BUFFERSIZE (64*1024)
+#define OSDP_MULTI_DEFAULT_BUFFERSIZE (64*1024)
+#define OSDP_FILEXFER_FRAGMENT_MAX (2048)
+#define OSDP_FILEXFER_STATUS_GOOD (0)
+#define OSDP_FILEXFER_STATUS_ABORT (1)
 
 // open-osdp Reply_ID values...
 #define MFGREP_OOSDP_CAKCert (0x01)
+
 
 
 #define ST_OK                (0)
@@ -611,6 +678,17 @@ typedef struct osdp_multi_hdr
 #define ST_OUT_UNKNOWN               (45)
 #define ST_OSDP_NET_ERROR            (46)
 #define ST_OSDP_NET_CLOSED           (47)
+#define ST_CMD_PARSE_ERROR           (48)
+#define ST_MFG_UNKNOWN               (49)
+
+#define ST_XFER_REC                  (50)
+#define ST_XFER_REFUSE               (51)
+#define ST_XFER_IDLE                 (52)
+#define ST_XFER_FRAG_TOO_BIG         (53)
+#define ST_XFER_OUT_OF_SYNC          (54)
+#define ST_XFER_COMPLETE             (55)
+#define ST_XFER_BAD_RESPONSE         (56)
+#define ST_XFER_ABORT                (57)
 
 int
   m_version_minor;
@@ -625,6 +703,7 @@ int
 
 
 int action_osdp_MFG (OSDP_CONTEXT *ctx, OSDP_MSG *msg);
+int action_osdp_MFGREP (OSDP_CONTEXT *ctx, OSDP_MSG *msg);
 int action_osdp_OUT (OSDP_CONTEXT *ctx, OSDP_MSG *msg);
 int action_osdp_POLL (OSDP_CONTEXT *ctx, OSDP_MSG *msg);
 int action_osdp_RAW (OSDP_CONTEXT *ctx, OSDP_MSG *msg);
@@ -636,6 +715,12 @@ int calc_parity (unsigned short value, int length, int sense);
 int display_menu (int menu);
 void display_sim_reader (OSDP_CONTEXT *ctx, char *str);
 int fasc_n_75_to_string (char * s, long int *sample_1);
+int file_transfer_accepted (OSDP_CONTEXT *ctx);
+int file_transfer_continue (OSDP_CONTEXT *ctx, unsigned char *msg_payload);
+int file_transfer_init_receive (OSDP_CONTEXT *ctx, unsigned char *payload, int *new_message_size);
+int file_transfer_response (OSDP_CONTEXT *ctx, int new_message_size, int file_transfer_status);
+int file_transfer_update_buffer (OSDP_CONTEXT *ctx, unsigned char *payload);
+int file_transfer_validate_header (OSDP_CONTEXT *ctx, unsigned char *payload);
 int next_sequence (OSDP_CONTEXT *ctx);
 int initialize_osdp (OSDP_CONTEXT *ctx);
 int init_serial (OSDP_CONTEXT *context, char *device);
@@ -659,13 +744,18 @@ int monitor_osdp_message (OSDP_CONTEXT *context, OSDP_MSG *msg);
 int process_osdp_message (OSDP_CONTEXT *context, OSDP_MSG *msg);
 int read_command (OSDP_CONTEXT *ctx, OSDP_COMMAND *cmd);
 int read_config (OSDP_CONTEXT *context);
-int send_message (OSDP_CONTEXT *context, int command, int dest_addr,
-  int *current_length, int data_length, unsigned char *data);
-int send_osdp_data (OSDP_CONTEXT *ctx, unsigned char *buf, int lth);
-int send_secure_message (OSDP_CONTEXT *context, int command, int dest_addr,
-  int *current_length, int data_length, unsigned char *data, int sec_blk_type,
-  int sec_blk_lth, unsigned char *sec_blk);
+int  send_message (OSDP_CONTEXT *context, int command, int dest_addr,
+       int *current_length, int data_length, unsigned char *data);
+int  send_osdp_data (OSDP_CONTEXT *ctx, unsigned char *buf, int lth);
+int  send_secure_message (OSDP_CONTEXT *context, int command, int dest_addr,
+        int *current_length, int data_length, unsigned char *data, int sec_blk_type,
+        int sec_blk_lth, unsigned char *sec_blk);
 void signal_callback_handler (int signum);
+int  start_filexfer (OSDP_CONTEXT *ctx, unsigned char *oui,
+        unsigned char command_id, unsigned char *buffer, int buffer_length);
+int  start_multipart (OSDP_CONTEXT *ctx, unsigned char *oui,
+        unsigned char command_id, unsigned char *buffer, int buffer_length);
+
 unsigned short int fCrcBlk (unsigned char *pData, unsigned short int nLength);
 int write_status (OSDP_CONTEXT *ctx);
 

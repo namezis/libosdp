@@ -207,8 +207,8 @@ int
     listen_sd;
   int
     optval;
-  gnutls_priority_t
-    priority_cache;
+//  gnutls_priority_t
+//    priority_cache;
   int
     sd;
   int
@@ -252,12 +252,20 @@ int
   };
   if (status EQUALS ST_OK)
   {
+    strcpy (config.tls_tuning,
+      "PERFORMANCE:%SERVER_PRECEDENCE:+PSK");
+    strcpy (config.tls_tuning,
+      "PERFORMANCE:%SERVER_PRECEDENCE:-SHA:+AES128_CBC:+PSK");
+//      "SERVER128:+PSK:+DHE_PSK:+SHA:+AES128_CBC");
+//    fprintf (stderr, "GnuTLS \'Priority\': %s\n",
+//      config.tls_tuning);
     generate_dh_params ();
-    gnutls_priority_init (&priority_cache,
+
+//    gnutls_priority_init (&priority_cache, config.tls_tuning, NULL);
 //      "PERFORMANCE:%SERVER_PRECEDENCE", NULL);
 //"SERVER128:+PSK:+DHE_PSK:+SHA:+AES128_CBC",
-"PERFORMANCE:%SERVER_PRECEDENCE:+PSK",
-      NULL);
+//"PERFORMANCE:%SERVER_PRECEDENCE:+PSK",
+//      NULL);
 
     gnutls_certificate_set_dh_params(x509_cred, dh_params);
 
@@ -305,7 +313,8 @@ int
   if (status EQUALS ST_OK)
   {
     gnutls_init (&(tls_session), GNUTLS_SERVER);
-    gnutls_priority_set(tls_session, priority_cache);
+gnutls_set_default_priority (tls_session);
+//    gnutls_priority_set(tls_session, priority_cache);
     gnutls_credentials_set(tls_session, GNUTLS_CRD_CERTIFICATE, x509_cred);
 
     if (!context.disable_certificate_checking)

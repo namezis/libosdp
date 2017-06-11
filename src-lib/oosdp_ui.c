@@ -24,6 +24,11 @@
 #include <string.h>
 #include <time.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 
 #include <gnutls/gnutls.h>
@@ -596,7 +601,33 @@ status = -1;
       context->power_report = 1;
       status = ST_OK;
       break;
+
+    case OSDP_CMDB_SEND_FILE:
+      {
+        int dlf;
+        int status_io;
+        extern unsigned char default_filexfer_buffer [];
+
+        // details is path to file to download
+
+        dlf = open (details, O_RDONLY);
+        if (dlf >= 0)
+        {
+          status_io = read (dlf, default_filexfer_buffer,
+            OSDP_FILEXFER_DEFAULT_BUFFERSIZE); close (dlf);
+ 
+fprintf (stderr, "Vendor Code is now:%02x%02x%02x\n",
+  context->vendor_code [0], context->vendor_code [1],
+  context->vendor_code [2]);
+          status = start_filexfer
+            (context, context->vendor_code, MFG_SMITHEE_FWUPDATE,
+              default_filexfer_buffer, status_io);
+        };
+      };
+      break;
+
     case OSDP_CMDB_SEND_POLL:
+
       current_length = 0;
       status = send_message (context,
         OSDP_POLL, p_card.addr, &current_length, 0, NULL);

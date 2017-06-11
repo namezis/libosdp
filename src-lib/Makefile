@@ -1,6 +1,6 @@
 # Make file for libosdp
 
-#  (C)Copyright 2015 Smithee,Spelvin,Agnew & Plinge, Inc.
+#  (C)Copyright 2015-2017 Smithee,Spelvin,Agnew & Plinge, Inc.
 
 #  Support provided by the Security Industry Association
 #  http://www.securityindustry.org
@@ -21,6 +21,7 @@
 OUTLIB=libosdp.a
 CC=clang
 CFLAGS=-I /tester/current/include
+CFLAGS_EX=-c -g -I ../include -Wall -Werror
 
 
 all:	${OUTLIB}
@@ -30,13 +31,14 @@ build:	all
 clean:
 	rm -f core *.o ${OUTLIB}
 
-libosdp.a:	oo_initialize.o oo_process.o oo_util.o oo_util2.o \
-	  oo_cmdbreech.o oosdp_actions.o oosdp_crc.o oosdp_files.o oosdp_logmsg.o \
-	  oosdp_secure.o oosdp_ui.o osdp-api.o
+libosdp.a:	oo_initialize.o oo_multi.o oo_process.o oo_util.o oo_util2.o \
+	  oo_cmdbreech.o oosdp_actions.o oosdp_crc.o oosdp_files.o \
+	  oosdp_logmsg.o oosdp_secure.o oosdp_ui.o osdp-api.o
 	ar r libosdp.a \
-	  oo_cmdbreech.o oo_initialize.o oo_process.o oo_util.o oo_util2.o \
-	  oosdp_actions.o oosdp_crc.o oosdp_files.o oosdp_logmsg.o oosdp_secure.o oosdp_ui.o \
-	  osdp-api.o
+	  oo_cmdbreech.o oo_initialize.o oo_multi.o oo_process.o \
+	  oo_util.o oo_util2.o \
+	  oosdp_actions.o oosdp_crc.o oosdp_files.o oosdp_logmsg.o \
+	  oosdp_secure.o oosdp_ui.o osdp-api.o
 
 oo_cmdbreech.o:	oo_cmdbreech.c ../include/open-osdp.h
 	${CC} ${CFLAGS} -c -g -I../include -Wall -Werror \
@@ -45,6 +47,10 @@ oo_cmdbreech.o:	oo_cmdbreech.c ../include/open-osdp.h
 oo_initialize.o:	oo_initialize.c ../include/open-osdp.h
 	${CC} ${CFLAGS} -c -g -I../include -Wall -Werror \
 	  oo_initialize.c
+
+oo_multi.o:	oo_multi.c ../include/open-osdp.h ../include/osdp_filexfer.h
+	${CC} ${CFLAGS_EX} \
+	  oo_multi.c
 
 oo_process.o:	oo_process.c
 	${CC} ${CFLAGS} -c -g -I../include -Wall -Werror \

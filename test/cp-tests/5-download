@@ -1,0 +1,10 @@
+#!/bin/bash
+set -x
+CMDPATH=/opt/open-osdp/run/CP/open_osdp_command.json
+echo  >${CMDPATH} "{"
+echo >>${CMDPATH} "  \"command\" : \"send_file\","
+echo >>${CMDPATH} "  \"download_path\" : \"$1\","
+echo >>${CMDPATH} "  \"_end\" : \"send a file down to PD\""
+echo >>${CMDPATH} "}"
+/opt/open-osdp/bin/HUP-CP
+

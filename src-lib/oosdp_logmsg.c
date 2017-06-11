@@ -89,6 +89,7 @@ char
   return (funcname);
 };
 
+
 int
   oosdp_make_message
     (int
@@ -141,6 +142,78 @@ int
         *(msg->data_payload+0),
         keypad_string,
         *(msg->data_payload+1));
+    };
+    break;
+
+  case OOSDP_MSG_MFG:
+    {
+      OSDP_FILEXFER_HEADER_1
+        *filexfer;
+      OSDP_MFG_HDR
+        *mfg;
+      unsigned char
+        msg_sig [5];
+      unsigned char
+        msg_sig_smithee [5] =
+          { 0x0A, 0x00, 0x17, 0x01, 0x00 };
+
+      msg = (OSDP_MSG *) aux;
+      mfg = (OSDP_MFG_HDR *)(msg->data_payload);
+      filexfer = (OSDP_FILEXFER_HEADER_1 *)&(mfg->mfg_details_start);
+      memcpy (msg_sig, mfg->VendorCode, 3);
+      memcpy (msg_sig+3, &(mfg->Command_ID), 2);
+      sprintf (tlogmsg, "MFG Request: OUI %02x%02x%02x Cmd %02x%02x",
+        mfg->VendorCode [0], mfg->VendorCode [1], mfg->VendorCode [2],
+        mfg->Command_ID >> 8,
+        mfg->Command_ID & 0xff);
+    
+      if (0 EQUALS memcmp (msg_sig_smithee, msg_sig, sizeof (msg_sig)))
+      {
+        char ts1 [1024];
+        char ts2 [1024];
+        strcpy (ts1, tlogmsg);
+        sprintf (ts2, "\n  File Transfer: Type %02x Total %ld. Offset %ld. FragSize %d.",
+          filexfer->FtType, filexfer->FtSizeTotal, filexfer->FtOffset, filexfer->FtFragmentSize);
+        strcpy (tlogmsg, ts1);
+        strcat (tlogmsg, ts2);
+      };
+    };
+    break;
+
+  case OOSDP_MSG_MFGREP:
+    {
+      OSDP_FILEXFER_RESPONSE_HEADER
+        *filexfer_status;
+      OSDP_MFG_HDR
+        *mfg;
+      unsigned char
+        msg_sig [5];
+      unsigned char
+        msg_sig_smithee [5] =
+          { 0x0A, 0x00, 0x17, 0x02, 0x00 };
+
+      msg = (OSDP_MSG *) aux;
+      mfg = (OSDP_MFG_HDR *)(msg->data_payload);
+      filexfer_status = (OSDP_FILEXFER_RESPONSE_HEADER *)&(mfg->mfg_details_start);
+      memcpy (msg_sig, mfg->VendorCode, 3);
+      memcpy (msg_sig+3, &(mfg->Command_ID), 2);
+      sprintf (tlogmsg, "MFG Response: OUI %02x%02x%02x Cmd %02x%02x",
+        mfg->VendorCode [0], mfg->VendorCode [1], mfg->VendorCode [2],
+        mfg->Command_ID >> 8, mfg->Command_ID & 0xff);
+    
+      if (0 EQUALS memcmp (msg_sig_smithee, msg_sig, sizeof (msg_sig)))
+      {
+        char ts1 [1024];
+        char ts2 [1024];
+        strcpy (ts1, tlogmsg);
+        sprintf (ts2,
+"\n  File Transfer Status: Status Code=%04x CommandCode %02x TotalLength %d. ReplyMessageOffset %d. ReplyDataLength %d.",
+          filexfer_status->CommandCode, filexfer_status->TotalLength, filexfer_status->ReplyMessageOffset,
+          filexfer_status->ReplyDataLength,
+          filexfer_status->Status);
+        strcpy (tlogmsg, ts1);
+        strcat (tlogmsg, ts2);
+      };
     };
     break;
 
@@ -205,6 +278,7 @@ int
           break;
         case 10:
           value = *(i+1+msg->data_payload) + 256 * (*(i+2+msg->data_payload));
+          context.max_pd_receive_payload = value;
           sprintf (tstr, "  [%02d] %s %d;\n",
             1+i/3, osdp_pdcap_function (*(i+0+msg->data_payload)), value);
           break;
