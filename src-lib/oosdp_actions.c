@@ -69,13 +69,6 @@ int
     status = oosdp_log (ctx, OSDP_LOG_NOTIMESTAMP, 1, tlogmsg);
   mfg_command = MFG_UNKNOWN;
   mfg = (OSDP_MFG_HDR *)(msg->data_payload);
-  if (ctx->verbosity > 3)
-  {
-    sprintf (tlogmsg, "osdp_MFG: OUI %02x-%02x-%02x Cmd %02x\n",
-      mfg->VendorCode [0], mfg->VendorCode [1], mfg->VendorCode [2],
-      mfg->Command_ID);  
-    fprintf (ctx->log, "%s\n", tlogmsg);
-  };
   details = &(mfg->mfg_details_start);
   oui = (mfg->VendorCode [0]);
   oui = (oui * 256) + (mfg->VendorCode [1]);
@@ -120,7 +113,8 @@ fprintf (stderr, "MFG smithee 1\n");
     if (status EQUALS ST_OK)
     {
       // assuming we liked this message respond
-      status = file_transfer_response (ctx, new_message_size, OSDP_FILEXFER_STATUS_GOOD);
+      status = file_transfer_response (ctx, new_message_size,
+        OSDP_FILEXFER_STATUS_GOOD);
     };
 
     break;
@@ -176,10 +170,13 @@ fprintf (stderr, "MFGREP smithee status\n");
     status = file_transfer_continue (ctx, (unsigned char *)mfg);
     if (status EQUALS ST_XFER_COMPLETE)
     {
+      status = oosdp_log (ctx, OSDP_LOG_NOTIMESTAMP, 1,
+        "\nFile Transfer complete.\n");
       // if we're done, close up the file and go back to "idle"
       ctx->filebuf = 0;
       ctx->total_filexfer_length = 0;
       ctx->next_filexfer_offset = 0; // should remain at 0 for PD
+      status = ST_OK;
     };
     break;
   };
@@ -413,7 +410,9 @@ int
     }
     else
     {
-fprintf (stderr, "CHUID code disabled\n"); exit (-1);
+
+// chuid processing code temp disabled
+
 #ifdef REMOVED
   int
     bufsize;
@@ -482,20 +481,20 @@ fprintf (stderr, "CHUID code disabled\n"); exit (-1);
   };
   if (!done)
   {
-        /*
-          if all else isn't interesting return a plain ack
-        */
-        current_length = 0;
-        status = send_message
-          (ctx, OSDP_ACK, p_card.addr, &current_length, 0, NULL);
-        ctx->pd_acks ++;
-        osdp_conformance.cmd_poll.test_status = OCONFORM_EXERCISED;
-        osdp_conformance.rep_ack.test_status = OCONFORM_EXERCISED;
-        if (ctx->verbosity > 4)
-        {
-          sprintf (tlogmsg, "Responding with OSDP_ACK");
-          fprintf (ctx->log, "%s\n", tlogmsg);
-        };
+    /*
+      if all else isn't interesting return a plain ack
+    */
+    current_length = 0;
+    status = send_message
+      (ctx, OSDP_ACK, p_card.addr, &current_length, 0, NULL);
+    ctx->pd_acks ++;
+    osdp_conformance.cmd_poll.test_status = OCONFORM_EXERCISED;
+    osdp_conformance.rep_ack.test_status = OCONFORM_EXERCISED;
+    if (ctx->verbosity > 4)
+    {
+      sprintf (tlogmsg, "Responding with OSDP_ACK");
+      fprintf (ctx->log, "%s\n", tlogmsg);
+    };
   };
 
   // update status json

@@ -164,8 +164,9 @@ if (secure != 0)
       new_length ++;
       next_data ++; // where crc goes (after data)
     };
-    if (context.verbosity > 5)
-      fprintf (stderr, "data_length %d new_length now %d next_data now %lx\n",
+    if (context.verbosity > 9)
+      fprintf (stderr,
+"osdp_build_message: data_length %d new_length now %d next_data now %lx\n",
         data_length, new_length, (unsigned long)next_data);
   };
 

@@ -303,7 +303,7 @@ typedef struct osdp_context
   unsigned char
     *mmsgbuf;
   unsigned short int
-    total_len;
+    total_multipart_length;
 
   // for assembling multipart message.  assumes one context structure
   // per PD we talk to
@@ -719,6 +719,8 @@ int file_transfer_accepted (OSDP_CONTEXT *ctx);
 int file_transfer_continue (OSDP_CONTEXT *ctx, unsigned char *msg_payload);
 int file_transfer_init_receive (OSDP_CONTEXT *ctx, unsigned char *payload, int *new_message_size);
 int file_transfer_response (OSDP_CONTEXT *ctx, int new_message_size, int file_transfer_status);
+int file_transfer_start (OSDP_CONTEXT *ctx, unsigned char *oui,
+      unsigned char command_id, unsigned char *buffer, int buffer_length);
 int file_transfer_update_buffer (OSDP_CONTEXT *ctx, unsigned char *payload);
 int file_transfer_validate_header (OSDP_CONTEXT *ctx, unsigned char *payload);
 int next_sequence (OSDP_CONTEXT *ctx);
@@ -751,8 +753,6 @@ int  send_secure_message (OSDP_CONTEXT *context, int command, int dest_addr,
         int *current_length, int data_length, unsigned char *data, int sec_blk_type,
         int sec_blk_lth, unsigned char *sec_blk);
 void signal_callback_handler (int signum);
-int  start_filexfer (OSDP_CONTEXT *ctx, unsigned char *oui,
-        unsigned char command_id, unsigned char *buffer, int buffer_length);
 int  start_multipart (OSDP_CONTEXT *ctx, unsigned char *oui,
         unsigned char command_id, unsigned char *buffer, int buffer_length);
 

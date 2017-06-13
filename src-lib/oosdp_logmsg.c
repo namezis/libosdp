@@ -172,8 +172,10 @@ int
         char ts1 [1024];
         char ts2 [1024];
         strcpy (ts1, tlogmsg);
-        sprintf (ts2, "\n  File Transfer: Type %02x Total %ld. Offset %ld. FragSize %d.",
-          filexfer->FtType, filexfer->FtSizeTotal, filexfer->FtOffset, filexfer->FtFragmentSize);
+        sprintf (ts2,
+"\n  File Transfer: Type %02x Total %ld. Offset %ld. FragSize %d.",
+          filexfer->FtType, filexfer->FtSizeTotal, filexfer->FtOffset,
+          filexfer->FtFragmentSize);
         strcpy (tlogmsg, ts1);
         strcat (tlogmsg, ts2);
       };

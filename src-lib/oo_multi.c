@@ -84,15 +84,21 @@ int
   filexfer_response = (OSDP_FILEXFER_RESPONSE_HEADER *)&(mfg->mfg_details_start);
 
   // if fields are sane...
-  if (filexfer_response->CommandCode != MFG_SMITHEE_FWUPDATE_STATUS)
+  if (mfg->Command_ID != MFG_SMITHEE_FWUPDATE_STATUS)
     status = ST_XFER_BAD_RESPONSE;
   if (status EQUALS ST_OK)
   {
     if (filexfer_response->Status != VERIDT_FW_UPDATE_SUCCESS)
       status = ST_XFER_ABORT;
   };
+  if (status EQUALS ST_OK)
+  {
+    if (ctx->next_filexfer_offset EQUALS ctx->total_filexfer_length)
+      status= ST_XFER_COMPLETE;
+  };
   return (status);
-}
+
+} /* file_transfer_continue */
 
 
 int
@@ -178,6 +184,15 @@ int
   status = send_message
     (ctx, OSDP_MFGREP, p_card.addr, &current_length, sizeof (response), response);
 
+  // if we're done reset things (on the PD side.)
+
+  if (ctx->total_filexfer_length EQUALS ctx->next_filexfer_offset)
+  {
+    ctx->filebuf = 0;
+    ctx->total_filexfer_length = 0;
+    ctx->next_filexfer_offset = 0;
+  };
+
   return (status);
 
 } /* file_transfer_response */
@@ -206,6 +221,15 @@ int
   memcpy (ctx->filebuf + ctx->next_filexfer_offset,
     &(filexfer->DataFragment),
     filexfer->FtFragmentSize);
+  if ((ctx->next_filexfer_offset + filexfer->FtFragmentSize) EQUALS
+    ctx->total_filexfer_length)
+  {
+    // done
+    ctx->filebuf = 0;
+    ctx->next_filexfer_offset = 0;
+    ctx->total_filexfer_length = 0;
+fprintf (stderr, "filexfer done resetting values to zero\n");
+  };
   return (status);
 
 } /* file_transfer_update_buffer */
@@ -283,7 +307,7 @@ int
 
 
 int
-  start_filexfer
+  file_transfer_start
     (OSDP_CONTEXT
       *ctx,
     unsigned char
@@ -295,7 +319,7 @@ int
     int
       buffer_length)
  
-{ /* start_filexfer */
+{ /* file_transfer_start */
 
   int
     current_length;
@@ -333,13 +357,22 @@ fprintf (stderr,
   filexfer_message->FtSizeTotal = buffer_length;
   filexfer_message->FtOffset = 0;
   filexfer_message->FtFragmentSize = ctx->max_pd_filexfer_payload;
-  if (filexfer_message->FtFragmentSize > (ctx->total_len - ctx->next_filexfer_offset))
+  if (filexfer_message->FtFragmentSize > (ctx->total_filexfer_length - ctx->next_filexfer_offset))
   {
     done = 1;
-    filexfer_message->FtFragmentSize = ctx->total_len - ctx->next_out;
+    filexfer_message->FtFragmentSize = ctx->total_filexfer_length - ctx->next_out;
   };
-  memcpy (raw_buffer+sizeof (filexfer_message), ctx->filebuf + ctx->next_filexfer_offset, filexfer_message->FtFragmentSize);
-  ctx->next_filexfer_offset = filexfer_message->FtFragmentSize + ctx->next_filexfer_offset;
+
+  /*
+    OSDP message buffer now contains MFG command with FileXfer subcommand.  Add
+    the actual data.
+  */
+  memcpy (&(filexfer_message->DataFragment),
+    ctx->filebuf + ctx->next_filexfer_offset,
+    filexfer_message->FtFragmentSize);
+
+  ctx->next_filexfer_offset = filexfer_message->FtFragmentSize +
+    ctx->next_filexfer_offset;
   current_length = 0;
   message_length = sizeof (*mfg_cmd) + sizeof (*filexfer_message) + filexfer_message->FtFragmentSize - 1;
   status = send_message (ctx,
@@ -357,7 +390,7 @@ fprintf (stderr,
 
   return (status);;
 
-} /* start_filexfer */
+} /* file_transfer_start */
 
 
 int
@@ -394,7 +427,7 @@ fprintf (stderr,
   oui [0], oui [1], oui [2], command_id, buffer_length, ctx->max_pd_receive_payload);
   done = 0;
   ctx->mmsgbuf = buffer;
-  ctx->total_len = buffer_length;
+  ctx->total_multipart_length = buffer_length;
   ctx->next_out = 0;
 
   mfg_cmd = (OSDP_MFG_HDR *) &(raw_buffer [0]);
@@ -405,10 +438,10 @@ fprintf (stderr,
   download_message->MpSizeTotal = buffer_length;
   download_message->MpOffset = 0;
   download_message->MpFragmentSize = ctx->max_pd_receive_payload;
-  if (download_message->MpFragmentSize > (ctx->total_len - ctx->next_out))
+  if (download_message->MpFragmentSize > (ctx->total_multipart_length - ctx->next_out))
   {
     done = 1;
-    download_message->MpFragmentSize = ctx->total_len - ctx->next_out;
+    download_message->MpFragmentSize = ctx->total_multipart_length - ctx->next_out;
   };
   memcpy (raw_buffer+sizeof (download_message), ctx->mmsgbuf + ctx->next_out, download_message->MpFragmentSize);
   ctx->next_out = download_message->MpFragmentSize + ctx->next_out;
@@ -419,7 +452,7 @@ fprintf (stderr,
   if (done)
   {
     ctx->mmsgbuf = 0;
-    ctx->total_len = 0;
+    ctx->total_multipart_length = 0;
     ctx->next_out = 0;
   };
 

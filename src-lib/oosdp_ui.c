@@ -619,7 +619,7 @@ status = -1;
 fprintf (stderr, "Vendor Code is now:%02x%02x%02x\n",
   context->vendor_code [0], context->vendor_code [1],
   context->vendor_code [2]);
-          status = start_filexfer
+          status = file_transfer_start
             (context, context->vendor_code, MFG_SMITHEE_FWUPDATE,
               default_filexfer_buffer, status_io);
         };
